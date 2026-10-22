@@ -27,6 +27,33 @@
             overflow: hidden;
         }
 
+        /* 1. Standard approach for Firefox */
+        html {
+            overflow-y: scroll;               /* Ensures the scroll area always exists */
+            scrollbar-width: thin;            /* Makes the scroll blob skinny */
+            scrollbar-color: #888 transparent; /* thumb color | track color */
+        }
+
+        /* 2. WebKit approach for Chrome, Safari, Edge, and Opera */
+        html::-webkit-scrollbar {
+            width: 8px;                       /* Width of the vertical scrollbar space */
+            height: 8px;                      /* Height of the horizontal scrollbar space */
+        }
+
+        html::-webkit-scrollbar-track {
+            background: transparent;          /* Makes the background bar completely invisible */
+        }
+
+        html::-webkit-scrollbar-thumb {
+            background-color: #888;         /* Color of your scroll blob */
+            border-radius: 10px;              /* Rounds the edges into a blob shape */
+        }
+
+        /* Optional: Darkens the blob slightly when you hover over it */
+        html::-webkit-scrollbar-thumb:hover {
+            background-color: #555; 
+        }
+
         /* 1. Messages Container */
         #messages-container {
             width: 50rem; /* Match this to your .prompt-wrapper width (or make it smaller like 45rem) */
@@ -273,24 +300,28 @@
             history.push({ role: 'user', content: text });
             try {
                 var model = document.getElementById("model-select").value
-                const response = await fetch('http://localhost:11434/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: model, // Make sure this matches `ollama list`
-                        messages: history,
-                        stream: false
-                    })
-                });
-                const data = await response.json();
-                if (data.error) {
-                    history.pop(); // Remove the unsent user prompt from history
-                    console.log(`\nOllama Error: ${data.error}`);
-                    return;
-                }
-                if (data.message) {
-                    history.push(data.message);
-                    return data.message.content;
+                if (model) {
+                    const response = await fetch('http://localhost:11434/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: model, // Make sure this matches `ollama list`
+                            messages: history,
+                            stream: false
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.error) {
+                        history.pop(); // Remove the unsent user prompt from history
+                        console.log(`\nOllama Error: ${data.error}`);
+                        return;
+                    }
+                    if (data.message) {
+                        history.push(data.message);
+                        return data.message.content;
+                    }
+                } else {
+                    return "*Error: no model selected*"
                 }
             } catch (err) {
                 return "";
@@ -355,20 +386,20 @@
                         });
                     } else {
                         const option = document.createElement('option');
-                        option.value = 'qwen2.5:3b';
-                        option.textContent = 'qwen2.5:3b';
+                        option.value = '';
+                        option.textContent = 'No models available';
                         option.className = "bg-[#2f2f2f] text-gray-200";
                         select.appendChild(option);
                     }
                     return true;
                 } else {
                     console.warn('Ollama responded with status:', response.status);
-                    select.innerHTML = '<option value="qwen2.5:3b">qwen2.5:3b</option>';
+                    select.innerHTML = '<option value="">No models available</option>';
                     return false;
                 }
             } catch (error) {
                 console.error('Ollama is offline or unreachable:', error.message);
-                select.innerHTML = '<option value="qwen2.5:3b">qwen2.5:3b</option>';
+                select.innerHTML = '<option value="">No models available</option>';
                 return false;
             }
         }
@@ -382,7 +413,9 @@
 
         document.getElementById("main-form").addEventListener('submit', function(e) {
             e.preventDefault();
-            go();
+            if (document.getElementById("user-input").value) {
+                go();
+            }
         });
 
         document.addEventListener('keydown', e => {
