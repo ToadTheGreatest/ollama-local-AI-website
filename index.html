@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555555;
+        }
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1.5rem;
+            width: 100%;
+        }
+        .message-user .bubble {
+            max-width: 70%;
+            background-color: #2f2f2f;
+            color: #ffffff;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .message-ai {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 1.5rem;
+            width: 100%;
+        }
+        .message-ai .bubble {
+            max-width: 85%;
+            color: #ececec;
+            padding: 0.75rem 0.5rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body class="h-full bg-[#212121] text-gray-100 flex flex-col items-center justify-between font-sans antialiased">
+
+    <!-- 1. INVISIBLE MESSAGES CONTAINER -->
+    <div id="messages-container" class="w-full max-w-3xl flex-1 overflow-y-auto px-4 py-6 space-y-6">
+        <!-- Messages will be injected here dynamically by your JavaScript -->
+    </div>
+
+    <!-- 2. CHATGPT-INSPIRED BOTTOM PROMPT BOX -->
+    <div class="w-full max-w-3xl px-4 pb-4 pt-2">
+        <form class="relative flex items-center bg-[#2f2f2f] rounded-3xl border border-[#424242] focus-within:border-[#676767] shadow-lg transition-colors px-4 py-2.5">
+            <!-- Prompt Input Textarea -->
+            <textarea 
+                id="user-input"
+                rows="1" 
+                placeholder="Message LocalAI..." 
+                class="w-full bg-transparent text-gray-100 placeholder-gray-400 focus:outline-none resize-none text-base pr-10 py-1 max-h-52"
+            ></textarea>
+
+            <!-- Send Button -->
+            <button 
+                type="submit" 
+                id="send-button"
+                class="absolute right-3 p-1.5 rounded-full bg-white text-black hover:opacity-80 disabled:opacity-30 transition-opacity flex items-center justify-center shrink-0"
+                title="Send message"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/>
+                </svg>
+            </button>
+        </form>
+    </div>
+    <script>
+        const message_inner = '<div class="bubble">%TEXT%</div>';
+
+        const history = [
+            {
+                "role": "system",
+                "content": `
+You are a helpful AI chatbot running on the user's local system. Help the user with everything they need.
+`
+            }
+        ];
+
+        async function chat(prompt) {
+            text = prompt
+            if (!text) return;
+            history.push({ role: 'user', content: text });
+            try {
+                const response = await fetch('http://localhost:11434/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'dnd-ai', // Make sure this matches `ollama list`
+                        messages: history,
+                        stream: false
+                    })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    history.pop(); // Remove the unsent user prompt from history
+                    output.innerText += `\nOllama Error: ${data.error}`;
+                    return;
+                }
+                if (data.message) {
+                    history.push(data.message);
+                    return data.message
+                }
+            } catch (err) {
+                return ""
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.createElement('div');
+            container.className = sender === "user" ? 'message-user' : 'message-ai';
+            container.innerHTML = messages.inner.replace("%TEXT%", text);
+            document.getELementById("messages-container").appendChild(container)
+        }
+
+        async function sendToAI(prompt) {
+            var respose = await chat(prompt)
+        }
+    </script>
+</body>
+</html>
