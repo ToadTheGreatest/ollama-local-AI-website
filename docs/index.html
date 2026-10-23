@@ -318,7 +318,7 @@
     </div>
 
     <div class="footer-info">
-        Version 1.1 By <a href="https://github.com/ToadTheGreatest" target="_blank">ToadTheGreatest</a>
+        Version 1.2 By <a href="https://github.com/ToadTheGreatest" target="_blank">ToadTheGreatest</a>
     </div>    <script>
         const history = [
             {
@@ -334,52 +334,91 @@
             try {
                 var model = document.getElementById("model-select").value
                 if (model) {
-                    const response = await fetch('http://localhost:11434/api/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: model, // Make sure this matches `ollama list`
-                            messages: history,
-                            stream: true
-                        })
-                    });
-                    if (!response.ok) {
-                        history.pop(); // Remove the unsent user prompt from history
-                        console.log(`\nOllama Error: ${data.error}`);
-                        return "*Error: Ollama failed! Please try again.*";
-                    }
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
+                    if (!model === "/install") {
+                        const response = await fetch('http://localhost:11434/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: model, // Make sure this matches `ollama list`
+                                messages: history,
+                                stream: true
+                            })
+                        });
+                        if (!response.ok) {
+                            history.pop(); // Remove the unsent user prompt from history
+                            console.log(`\nOllama Error: ${data.error}`);
+                            return "*Error: Ollama failed! Please try again.*";
+                        }
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
 
-                    let assistantMessage = { role: 'assistant', content: '' }
-                    history.push(assistantMessage)
+                        let assistantMessage = { role: 'assistant', content: '' }
+                        history.push(assistantMessage)
 
-                    let  buffer = ''
+                        let  buffer = ''
 
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        buffer += decoder.decode(value, { stream:true });
-                        let lines = buffer.split("\n")
-                        buffer = lines.pop();
-                        for (const line of lines) {
-                            if (line.trim() === '') continue;
-                            const data = JSON.parse(line)
-                            if (data.error) {
-                                history.pop();
-                                console.log(`\nOllama Error: ${data.error}`)
-                                if (onTokenCallback) {
-                                    onTokenCallback("*Ollama response error! Please try again.*")
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            buffer += decoder.decode(value, { stream:true });
+                            let lines = buffer.split("\n")
+                            buffer = lines.pop();
+                            for (const line of lines) {
+                                if (line.trim() === '') continue;
+                                const data = JSON.parse(line)
+                                if (data.error) {
+                                    history.pop();
+                                    console.log(`\nOllama Error: ${data.error}`)
+                                    if (onTokenCallback) {
+                                        onTokenCallback("*Ollama response error! Please try again.*")
+                                    }
+                                    return "*Ollama response error! Please try again.*"
                                 }
-                                return "*Ollama response error! Please try again.*"
-                            }
-                            if (data.message && data.message.content) {
-                                const contentChunk = data.message.content;
-                                assistantMessage.content += contentChunk
-                                if (onTokenCallback) {
-                                    onTokenCallback(assistantMessage.content)
+                                if (data.message && data.message.content) {
+                                    const contentChunk = data.message.content;
+                                    assistantMessage.content += contentChunk
+                                    if (onTokenCallback) {
+                                        onTokenCallback(assistantMessage.content)
+                                    }
                                 }
                             }
+                        }
+                    } else if (model === "/install") {
+                        const payload = {
+                            model: prompt,
+                            stream: false
+                        };
+                        outputtext = `*Starting model download for ${prompt}*\n`;
+                        if (onTokenCallback) {
+                            onTokenCallback(outputtext);
+                        }
+                        try {
+                            const response = await fetch("http://localhost:11434/api/pull", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify(payload)
+                            });
+                            if (!response.ok) {
+                                outputtext += "*Error: Model download failed! does the model exist? are you connected to the internet?*\n";
+                                if (onTokenCallback) {
+                                    onTokenCallback(outputtext);
+                                }
+                                return;
+                            }
+                            const data = await response.json();
+                            outputtext += "*Download success!*\n";
+                            if (onTokenCallback) {
+                                onTokenCallback(outputtext);
+                            }
+                            checkOllamaStatus();
+                        } catch {
+                            outputtext += "*Error: Model download failed! does the model exist? are you connected to the internet?*\n";
+                            if (onTokenCallback) {
+                                onTokenCallback(outputtext);
+                            }
+                            return;
                         }
                     }
                 } else {
@@ -465,6 +504,11 @@
                         option.className = "bg-[#2f2f2f] text-gray-200";
                         select.appendChild(option);
                     }
+                    const option = document.createElement('option');
+                    option.value = '/install';
+                    option.textContent = '[Install Model]';
+                    option.className = "bg-[#2f2f2f] text-gray-200";
+                    select.appendChild(option);
                     return true;
                 } else {
                     offlinelock();
