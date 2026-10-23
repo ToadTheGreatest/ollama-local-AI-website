@@ -328,7 +328,7 @@
         ];
 
         async function chat(prompt, onTokenCallback) {
-            text = prompt;
+            var text = prompt;
             if (!text) return;
             try {
                 var model = document.getElementById("model-select").value
@@ -347,6 +347,9 @@
                         if (!response.ok) {
                             history.pop(); // Remove the unsent user prompt from history
                             console.log(`\nOllama Error`);
+                            if (onTokenCallback) {
+                                onTokenCallback("*Ollama response error! Please try again.*")
+                            }
                             return "*Error: Ollama failed! Please try again.*";
                         }
                         const reader = response.body.getReader();
