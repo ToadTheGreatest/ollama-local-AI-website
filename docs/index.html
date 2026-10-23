@@ -320,7 +320,12 @@
     <div class="footer-info">
         Version 1.1 By <a href="https://github.com/ToadTheGreatest" target="_blank">ToadTheGreatest</a>
     </div>    <script>
-        const history = [];
+        const history = [
+            {
+                "role": "user",
+                "content": "(SYSTEM INFO): Here is some info about this chat interface for reference if the user asks about the chat interface. 1). It supports Markdown. 2). It supports model interchanging. 3). It is fully local. 4). It has a github page (clean redirect to github.com/ToadTheGreatest/ollama-local-AI-website) 5). The layout was inspired by Google Gemini and OpenAI's ChatGPT website. 6). The chat interface is fully message based."
+            }
+        ];
 
         async function chat(prompt) {
             text = prompt;
