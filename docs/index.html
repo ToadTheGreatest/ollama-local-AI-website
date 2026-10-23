@@ -368,7 +368,10 @@
                             if (data.error) {
                                 history.pop();
                                 console.log(`\nOllama Error: ${data.error}`)
-                                return "*Ollama response error! Please try again.*`;"
+                                if (onTokenCallback) {
+                                    onTokenCallback("*Ollama response error! Please try again.*")
+                                }
+                                return "*Ollama response error! Please try again.*"
                             }
                             if (data.message && data.message.content) {
                                 const contentChunk = data.message.content;
@@ -380,10 +383,16 @@
                         }
                     }
                 } else {
+                    if (onTokenCallback) {
+                        onTokenCallback("*Error: no model selected*")
+                    }
                     return "*Error: no model selected*"
                 }
             } catch (err) {
                 checkOllamaStatus();
+                if (onTokenCallback) {
+                    onTokenCallback(`*Error: Ollama handoff failed! Is Ollama on?*`)
+                }
                 return `*Error: Ollama handoff failed! Is Ollama on?*`;
             }
         }
