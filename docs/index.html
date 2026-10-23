@@ -254,9 +254,37 @@
         a {
             color: #8c8c8c;
         }
+        .offline-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #dc2626; /* Red warning background */
+            color: #ffffff;
+            text-align: center;
+            padding: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .offline-banner.hidden {
+            transform: translateY(-100%); /* Slides out of view when online */
+        }
+
+        /* Dim/Lock styling when input is disabled */
+        #user-input:disabled, #send-button:disabled, #model-select:disabled {
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
     </style>
 </head>
 <body class="h-full bg-[#212121] text-gray-100 flex flex-col items-center justify-between font-sans antialiased">
+    <div id="offline-banner" class="offline-banner hidden">
+        Ollama is offline. Make sure Ollama is running.
+    </div>
     <span class="title"><b>Local AI</b><br><a href="https://github.com/ToadTheGreatest/ollama-local-AI-website">Github</a></span>
     <!-- 1. MESSAGES CONTAINER -->
     <div id="messages-container">
@@ -290,7 +318,7 @@
     </div>
 
     <div class="footer-info">
-        Version 1.0 By <a href="https://github.com/ToadTheGreatest" target="_blank">ToadTheGreatest</a>
+        Version 1.1 By <a href="https://github.com/ToadTheGreatest" target="_blank">ToadTheGreatest</a>
     </div>    <script>
         const history = [];
 
@@ -324,7 +352,8 @@
                     return "*Error: no model selected*"
                 }
             } catch (err) {
-                return "";
+                checkOllamaStatus();
+                return `*Error: Ollama handoff failed! Is Ollama on?*`;
             }
         }
 
@@ -372,6 +401,7 @@
                 });
 
                 if (response.ok) {
+                    onlineunlock();
                     const data = await response.json();
                     console.log('Ollama is running. Available models:', data.models);
                     
@@ -393,15 +423,31 @@
                     }
                     return true;
                 } else {
+                    offlinelock();
                     console.warn('Ollama responded with status:', response.status);
                     select.innerHTML = '<option value="">No models available</option>';
+                    setTimeout(checkOllamaStatus,5000)
                     return false;
                 }
             } catch (error) {
+                offlinelock();
                 console.error('Ollama is offline or unreachable:', error.message);
                 select.innerHTML = '<option value="">No models available</option>';
+                setTimeout(checkOllamaStatus,5000)
                 return false;
             }
+        }
+        function offlinelock() {
+            document.getElementById("offline-banner").classList.remove("hidden")
+            document.getElementById("user-input").disabled = true;
+            document.getElementById("send-button").disabled = true;
+            document.getElementById("model-select").disabled = true;
+        }
+        function onlineunlock() {
+            document.getElementById("offline-banner").classList.add("hidden")
+            document.getElementById("user-input").disabled = false;
+            document.getElementById("send-button").disabled = false;
+            document.getElementById("model-select").disabled = false;
         }
 
         // Run check status / load models on page load
