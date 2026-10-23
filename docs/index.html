@@ -327,7 +327,7 @@
             }
         ];
 
-        async function chat(prompt) {
+        async function chat(prompt, onTokenCallback) {
             text = prompt;
             if (!text) return;
             history.push({ role: 'user', content: text });
@@ -340,18 +340,44 @@
                         body: JSON.stringify({
                             model: model, // Make sure this matches `ollama list`
                             messages: history,
-                            stream: false
+                            stream: true
                         })
                     });
-                    const data = await response.json();
-                    if (data.error) {
+                    if (!response.ok) {
                         history.pop(); // Remove the unsent user prompt from history
                         console.log(`\nOllama Error: ${data.error}`);
-                        return;
+                        return "*Error: Ollama failed! Please try again.*";
                     }
-                    if (data.message) {
-                        history.push(data.message);
-                        return data.message.content;
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+
+                    let assistantMessage = { role: 'assistant', content: '' }
+                    history.push(assistantMessage)
+
+                    let  buffer = ''
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream:true });
+                        let lines = buffer.split("\n")
+                        buffer = lines.pop();
+                        for (const line of lines) {
+                            if (line.trim() === '') continue;
+                            const data = JSON.parse(line)
+                            if (data.error) {
+                                history.pop();
+                                console.log(`\nOllama Error: ${data.error}`)
+                                return "*Ollama response error! Please try again.*`;"
+                            }
+                            if (data.message && data.message.content) {
+                                const contentChunk = data.message.content;
+                                assistantMessage.content += contentChunk
+                                if (onTokenCallback) {
+                                    onTokenCallback(assistantMessage.content)
+                                }
+                            }
+                        }
                     }
                 } else {
                     return "*Error: no model selected*"
@@ -378,16 +404,20 @@
             }
             container.appendChild(bubble);
             messagesContainer.appendChild(container);
-            container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            scrollToBottom(true);
+            return bubble;
         }
 
         async function sendToAI(prompt) {
             document.getElementById("thinkingtext").textContent = "Thinking..." ;
             addMessage(prompt, "user");
-            var response = await chat(prompt);
+            const aiBubble = addMessage("", "ai");
+            await chat(prompt, (accumulatedText) => {
+                aiBubble.innerHTML = marked.parse(accumulatedText);
+                scrollToBottom(false);
+            });
             document.getElementById("thinkingtext").textContent = "";
-            addMessage(response, "ai");
-
+            addCopyButtonsToCodeBlocks(document.getElementById("messages-container"))
         }
 
         function go() {
@@ -455,6 +485,61 @@
             document.getElementById("model-select").disabled = false;
         }
 
+        function scrollToBottom(force = false) {
+            const container = document.getElementById("messages-container");
+            const threshold = 100;
+            const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+            if (force || distanceToBottom <= threshold) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function addCopyButtonsToCodeBlocks(element) {
+            const preBlocks = element.querySelectorAll('pre');
+
+            preBlocks.forEach(pre => {
+                // 1. Check if it contains a <code> tag
+                const codeBlock = pre.querySelector('code');
+                
+                // 2. Skip if there's no <code> block or if a copy button already exists
+                if (!codeBlock || pre.querySelector('.copy-btn')) return;
+
+                pre.style.position = 'relative';
+
+                const copyButton = document.createElement('button');
+                copyButton.textContent = 'Copy';
+                copyButton.className = 'copy-btn';
+                copyButton.style.position = 'absolute';
+                copyButton.style.top = '0.5rem';
+                copyButton.style.right = '0.5rem';
+                copyButton.style.padding = '0.25rem 0.5rem';
+                copyButton.style.fontSize = '0.75rem';
+                copyButton.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                copyButton.style.color = '#ececec';
+                copyButton.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                copyButton.style.borderRadius = '0.25rem';
+                copyButton.style.cursor = 'pointer';
+                copyButton.style.transition = 'background-color 0.2s';
+
+                copyButton.addEventListener('click', () => {
+                    const textToCopy = codeBlock.innerText;
+
+                    navigator.clipboard.writeText(textToCopy)
+                        .then(() => {
+                            copyButton.textContent = 'Copied!';
+                            setTimeout(() => {
+                                copyButton.textContent = 'Copy';
+                            }, 2000);
+                        })
+                        .catch(err => {
+                            console.error('Error copying text:', err);
+                        });
+                });
+
+                pre.appendChild(copyButton);
+            });
+        }
+
         // Run check status / load models on page load
         window.addEventListener('DOMContentLoaded', () => {
             checkOllamaStatus();
@@ -464,7 +549,7 @@
 
         document.getElementById("main-form").addEventListener('submit', function(e) {
             e.preventDefault();
-            if (document.getElementById("user-input").value) {
+            if (document.getElementById("user-input").value.trim()) {
                 go();
             }
         });
@@ -473,7 +558,7 @@
             if (e.key == "Enter") {
                 if (!cancelSend) {
                     e.preventDefault();
-                    if (document.getElementById("user-input").value) {
+                    if (document.getElementById("user-input").value.trim()) {
                         go();
                     }
                 }
