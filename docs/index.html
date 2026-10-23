@@ -457,7 +457,12 @@
         }
 
         async function sendToAI(prompt) {
-            document.getElementById("thinkingtext").textContent = "Thinking..." ;
+            var model = document.getElementById("model-select").value
+            if (model == "/install") {
+                document.getElementById("thinkingtext").textContent = "Installing...";
+            } else {
+                document.getElementById("thinkingtext").textContent = "Thinking...";
+            }
             addMessage(prompt, "user");
             const aiBubble = addMessage("", "ai");
             await chat(prompt, (accumulatedText) => {
