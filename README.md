@@ -111,13 +111,13 @@ sudo systemctl restart ollama
 
 ## 4. Use the website
 
-This should have ollama set up so the website can acess it. Click (here)[https://toadthegreatest.github.io/ollama-local-AI-website].
+This should have ollama set up so the website can acess it. Click [here](https://toadthegreatest.github.io/ollama-local-AI-website).
 
 ### Model installation
 
 To install models, in the website, select [install model] in the model selector dropdown and in the prompt, type the name of the model.
 
-You can get model names from the (official ollama website)[https://ollama.com/models]. Search for the model and then you can turn that into an ID. Here are some examples:
+You can get model names from the [official ollama website](https://ollama.com/models). Search for the model and then you can turn that into an ID. Here are some examples:
 
 <!--
 <iframe srcdoc='<html><body><label style="color:#fff">Model Name: </label><input type="text" id="model-name"><br><label style="color:#fff">Parameters: </label><input type="number" id="parameters"><select id="num-param-unit"><option value="m">Million</option><option value="b" selected>Billion</option><option value="t">Trillion</option></select><span style="color:#fff">Parameters</span><br><br><span style="color:#fff;background-color:#333;border-color:#333;border-radius:5px" id="model-id"></span><script>function get_model_id() {const name = document.getElementById("model-name").value;const params = document.getElementById("parameters").value;const p_unit = document.getElementById("num-param-unit").value;const output = document.getElementById("model-id");if (name.replaceAll(" ", "").trim && params && p_unit) {var modelid = `${name.replaceAll(" ","").trim().toLowerCase()}:${params}${p_unit}`;output.textContent = modelid;}}document.getElementById("model-name").addEventListener("input", get_model_id);document.getElementById("parameters").addEventListener("input", get_model_id);document.getElementById("num-param-unit").addEventListener("input", get_model_id);</script></body></html>'></iframe>
