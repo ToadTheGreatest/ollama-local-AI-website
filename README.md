@@ -113,38 +113,24 @@ sudo systemctl restart ollama
 
 This should have ollama set up so the website can acess it. Click (here)[https://toadthegreatest.github.io/ollama-local-AI-website].
 
-To install more models, in the website, select [install model] in the model selector dropdown and in the prompt, type the name of the model.
+### Model installation
 
-You can get model names from the (official ollama website)[https://ollama.com/models]. Search for the model and then you can use this tool to turn the model name into a model ID.
-<html>
-<body>
-<label>Model Name: </label>
-<input type="text" id="model-name"><br>
-<label>Parameters: </label>
-<input type="number" id="parameters">
-<select id="num-param-unit">
-<option value="m">Million</option>
-<option value="b" selected>Billion</option>
-<option value="t">Trillion</option>
-</select>
-<span>Parameters</span>
-<br>
-<br>
-<span style="background-color:#333;border-color:#333;border-radius:5px" id="model-id"><span>
-<script>
-    function get_model_id() {
-        const name = document.getElementById("model-name").value;
-        const params = document.getElementById("parameters").value;
-        const p_unit = document.getElementById("num-param-unit").value;
-        const output = document.getElementById("model-id");
-        if (name.trim().replace(" ", "-") && params && p_unit) {
-            var modelid = `${name.trim().replace("-","").toLowerCase()}:${params}${p_unit}`;
-            output.textContent = modelid;
-        }
-    }
-    document.getElementById("model-name").addEventListener("input", get_model_id);
-    document.getElementById("parameters").addEventListener("input", get_model_id);
-    document.getElementById("num-param-unit").addEventListener("input", get_model_id);
-</script>
-</body>
-</html>
+To install models, in the website, select [install model] in the model selector dropdown and in the prompt, type the name of the model.
+
+You can get model names from the (official ollama website)[https://ollama.com/models]. Search for the model and then you can turn that into an ID. Here are some examples:
+
+<!--
+<iframe srcdoc='<html><body><label style="color:#fff">Model Name: </label><input type="text" id="model-name"><br><label style="color:#fff">Parameters: </label><input type="number" id="parameters"><select id="num-param-unit"><option value="m">Million</option><option value="b" selected>Billion</option><option value="t">Trillion</option></select><span style="color:#fff">Parameters</span><br><br><span style="color:#fff;background-color:#333;border-color:#333;border-radius:5px" id="model-id"></span><script>function get_model_id() {const name = document.getElementById("model-name").value;const params = document.getElementById("parameters").value;const p_unit = document.getElementById("num-param-unit").value;const output = document.getElementById("model-id");if (name.replaceAll(" ", "").trim && params && p_unit) {var modelid = `${name.replaceAll(" ","").trim().toLowerCase()}:${params}${p_unit}`;output.textContent = modelid;}}document.getElementById("model-name").addEventListener("input", get_model_id);document.getElementById("parameters").addEventListener("input", get_model_id);document.getElementById("num-param-unit").addEventListener("input", get_model_id);</script></body></html>'></iframe>
+-->
+
+* Qwen 2.5 Coder (3 Billion parameters) --> qwen2.5-coder:3b
+* Llama 3 (2 Billion parameters) --> llama3:2b
+* Qwen 2.5 (1.5 billion parameters) --> qwen2.5:1.5b
+
+Use this to translate. **NO SPACES.**
+
+### Chatting
+
+To chat with your model, select it in the dropdown. This should automatically update after each install and reload of the page. if yours does not show up, open a terminal window and type `ollama list` and see if it comes up.
+
+Type your prompt in the prompting area and press `Enter` or the send button on the right. If you want to add another line, press `Shift`+`Enter`
